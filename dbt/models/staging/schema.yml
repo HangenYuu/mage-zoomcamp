@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: staging
+    database: dezoomcamp-416702
+    schema: nytime
+    
+    tables:
+      - name: bestsellers
