@@ -3,8 +3,17 @@ This is my final project for Data Engineering Zoomcamp.
 - Name: Pham Nguyen Hung
 - Signed-up email: hungpn032003@gmail.com
 
-<!-- START doctoc -->
-<!-- END doctoc -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [Disclaimer](#disclaimer)
+- [Problem statement](#problem-statement)
+- [Architecture](#architecture)
+- [How to run](#how-to-run)
+  - [Step 1. Resource creation (`terraform` folder)](#step-1-resource-creation-terraform-folder)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Disclaimer
 
