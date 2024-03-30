@@ -1,6 +1,6 @@
 {{ config(materialized='table') }}
 with source as (
-    select * from {{ source('staging', 'bestsellers') }}
+    select * from {{ source('prod', 'bestsellers') }}
 )
     select
         list_name_encoded,

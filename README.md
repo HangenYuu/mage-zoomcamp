@@ -16,7 +16,8 @@ This is my final project for Data Engineering Zoomcamp.
     - [Change config file](#change-config-file)
     - [Pipeline 1: Load data from (surrogate) 3rd party server and load into data lake (GCS bucket)](#pipeline-1-load-data-from-surrogate-3rd-party-server-and-load-into-data-lake-gcs-bucket)
     - [Pipeline 2: Load data from data lake into data warehouse (BigQuery)](#pipeline-2-load-data-from-data-lake-into-data-warehouse-bigquery)
-  - [Step 6. Create dbt model](#step-6-create-dbt-model)
+  - [Step 6. Create dbt model (`dbt` folder)](#step-6-create-dbt-model-dbt-folder)
+  - [Step 7: Create dashboard in Looker Studio](#step-7-create-dashboard-in-looker-studio)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -263,4 +264,30 @@ def test_output(output, *args) -> None:
 
 ![](./media/mage_4.png)
 
-## Step 6. Create dbt model
+## Step 6. Create dbt model (`dbt` folder)
+
+Setting up the account is similar to the video lesson. For me, I only needed one model from the base table in BigQuery, with configuration in the `models/prod` folder:
+```sql
+{{ config(materialized='table') }}
+with source as (
+    select * from {{ source('prod', 'bestsellers') }}
+)
+    select
+        list_name_encoded,
+        title,
+        author,
+        avg(price) AS avg_price,
+        avg(rank) AS avg_rank,
+        max(weeks_on_list) AS longest_streak
+    
+    from source
+    group by 1,2,3
+    order by longest_streak desc, avg_rank
+    limit 100
+```
+After running `dbt build` and see that it runs successfully, I deployed it to a pipeline run
+
+## Step 7: Create dashboard in Looker Studio
+For some reason I don't have access to Looker Studio (they said Pro trial has finished 30 days, maybe I misclicked some time before). But in any case, the usual way to access Looker Studio from BigQuery is click on "Explore data".
+
+![](./media/bigquery.png)

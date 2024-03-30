@@ -1,7 +1,7 @@
 version: 2
 
 sources:
-  - name: staging
+  - name: prod
     database: dezoomcamp-416702
     schema: nytime
     
