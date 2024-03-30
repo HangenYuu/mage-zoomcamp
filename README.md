@@ -16,6 +16,7 @@ This is my final project for Data Engineering Zoomcamp.
     - [Change config file](#change-config-file)
     - [Pipeline 1: Load data from (surrogate) 3rd party server and load into data lake (GCS bucket)](#pipeline-1-load-data-from-surrogate-3rd-party-server-and-load-into-data-lake-gcs-bucket)
     - [Pipeline 2: Load data from data lake into data warehouse (BigQuery)](#pipeline-2-load-data-from-data-lake-into-data-warehouse-bigquery)
+  - [Step 6. Create dbt model](#step-6-create-dbt-model)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -259,4 +260,7 @@ def test_output(output, *args) -> None:
     assert output is not None, 'The output is undefined'
 ```
 - `bestsellers_parquet_ingestion`: A picture is better here.
+
 ![](./media/mage_4.png)
+
+## Step 6. Create dbt model
