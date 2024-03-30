@@ -12,6 +12,8 @@ This is my final project for Data Engineering Zoomcamp.
 - [Architecture](#architecture)
 - [How to run](#how-to-run)
   - [Step 1. Resource creation (`terraform` folder)](#step-1-resource-creation-terraform-folder)
+  - [Step 2 - 5. Pipeline creation (`pipeline` folder)](#step-2---5-pipeline-creation-pipeline-folder)
+    - [Change config file](#change-config-file)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
