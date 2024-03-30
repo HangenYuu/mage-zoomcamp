@@ -18,6 +18,10 @@ This is my final project for Data Engineering Zoomcamp.
     - [Pipeline 2: Load data from data lake into data warehouse (BigQuery)](#pipeline-2-load-data-from-data-lake-into-data-warehouse-bigquery)
   - [Step 6. Create dbt model (`dbt` folder)](#step-6-create-dbt-model-dbt-folder)
   - [Step 7: Create dashboard in Looker Studio](#step-7-create-dashboard-in-looker-studio)
+- [Self-evaluation](#self-evaluation)
+  - [Official peer-review guideline:](#official-peer-review-guideline)
+  - [Reversal (or some more FYI sharing)](#reversal-or-some-more-fyi-sharing)
+- [Acknowledgement](#acknowledgement)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -29,8 +33,8 @@ I started the course late and did not finish Week 5 and Week 6 before doing the 
 
 I used the Kaggle dataset [New York Times Best Sellers](https://www.kaggle.com/datasets/dhruvildave/new-york-times-best-sellers), which containers all weekly New York Times Best Sellers List for the decade fo 2010-2019. The general question was "What is the profile of the top 100 New York Times Best Sellers of the decade?" Top 100 was selected based on *number of weekly appearances on the list* (more is better) and *average weekly ranking* (smaller is better). From this, I created a dashboard with 2 tiles to describe
 
-1. The number of titles in each category appeared on the list.
-2. The number of weekly appearances for top authors.
+1. The distribution of titles in each category appeared on the list.
+2. The distribution of weekly appearances for top authors.
 
 # Architecture
 
@@ -285,9 +289,62 @@ with source as (
     order by longest_streak desc, avg_rank
     limit 100
 ```
-After running `dbt build` and see that it runs successfully, I deployed it to a pipeline run
+After running `dbt build` and see that it runs successfully, I deployed it to a pipeline with CI/CD.
+
+For Continuous Integration (CI), development happens in a separate branch (`dbt`). After committing in dbt, I open a Pull Request on GitHub to merge the change to the `master` branch.
+
+For Continuous Deployment (CD), a pipeline is deployed on dbt cloud, scheduled to run based on the file in the `master` branch weekly on Sunday (when New York Times Best Seller List is refreshed).
+
+![](./media/dbt.png)
 
 ## Step 7: Create dashboard in Looker Studio
 For some reason I don't have access to Looker Studio (they said Pro trial has finished 30 days, maybe I misclicked some time before). But in any case, the usual way to access Looker Studio from BigQuery is click on "Explore data".
 
 ![](./media/bigquery.png)
+
+On Looker Studio, I create 2 visualizations to answer the questions above.
+
+1. The distribution of titles in each category appeared on the list.
+2. The distribution of weekly appearances for top authors.
+
+I tried to follow project's advice to create 2 different kind of graphs. However, it turns out that the 2 questions are most straight-forwardly answered with 2 bar graphs.
+
+![](./media/looker.png)
+
+For the first graph:
+- Dimension: list_name_encoded
+- Metric: COUNT of title
+- Sort: COUNT of title Descending
+
+For the second graph:
+- Dimension: title
+- Metric: MAX of longest_streak
+- Sort: MAX of longest_streak Descending
+
+Replicate this in the Setup page for the graph. To increase the number of bars so, change it on the style tab.
+![](./media/looker_1.png)
+![](./media/looker_2.png)
+
+The report can be viewed here: https://lookerstudio.google.com/s/sZ94PelAZII. I have set it to Public, but I think there is a data restriction. I don't know how to get through that, so besides the screenshot above I have also put a [PDF](./Bestsellers_of_the_Decade-1.pdf) in the repo.
+
+# Self-evaluation
+## Official peer-review guideline:
+- Problem description: 4 points (Problem is well described and it's clear what the problem the project solves.)
+- Cloud: 4 points (The project is developed in the cloud and IaC tools are used.)
+- Data ingestion (batch): 2 points (Partial workflow orchestration: some steps are orchestrated, some run manually) or 4 points (End-to-end pipeline: multiple steps in the DAG, uploading data to data lake) depends on whether using a GCS bucket as a 3rd-party server instead of Kaggle server is legitimate or not (Please be lenient to me :sweat_smile:!).
+- Data warehouse: 4 points (Tables are partitioned and clustered in a way that makes sense for the upstream queries (with explanation)). There is no clustering or partitioning in the table inside BigQuery because it does not make sense to do so. The simplest reason is the size - the cost incurred by reading a partitioned/clustered dataset of merely 61000 rows in 18MB far outweighs potential performance gains. The final table used in the dashboard is a mere 8KB, so even less of a reason.
+- Transformations (dbt, spark, etc): 4 points (Tranformations are defined with dbt, Spark or similar technologies)
+- Dashboard: 4 points (A dashboard with 2 tiles)
+- Reproducibility: 4 points (Instructions are clear, it's easy to run the code, and the code works) (Hopefully :sweat_smile:!)
+- Bonus:
+  - CI/CD: Used in dbt.
+
+## Reversal (or some more FYI sharing)
+As I already stated in the Disclaimer, this project was created as minimally possible based on what I have learnt in first 4 weeks. It will satisfy the requirements of the project (see above), but will not stand out in any way. It is really un-extra-ordinary.
+
+It is also just an average learning project - it introduced the learner (me) to the new tools and concepts, but it just does not make sense in the real world. We are talking about creating 2 Docker image, 1 dbt model, and 1 BigQuery table to support 8KB of data. Also, the 2 questions of the project might be interesting to the project, but will not make sense in the real world (i.e., no real value added to any business? I am not really sure here, since it seems that people can think of a business value for everything from some angle :sweat_smile:.)
+
+I am looking to the last 2 weeks of the course. I am using Spark on Databricks at work, but I have no experience with streaming data so want to get to know Kafka.
+
+# Acknowledgement
+I want to thank Data Talks Club team for creating this course, and thank you for reading this far and reviewing my project :heart_eyes:!
