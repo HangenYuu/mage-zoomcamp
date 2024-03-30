@@ -40,4 +40,26 @@ The code for each part are included in the relevant folder of the repo. The spec
   
 ## Step 1. Resource creation (`terraform` folder)
 
-The requirements here are one or more GCS buckets and a BigQuery schema, which is quite similar to what is introduced in the second part of lecture 1. In fact, the files in this folder are adapted from the `terraform_with_variables` folder used in that part.
+The requirements here are one or more GCS buckets and a BigQuery schema, which is quite similar to what is introduced in the second part of lecture 1. In fact, the files in this folder are adapted from the `terraform_with_variables` folder used in that part. Here you need to adapt the fields in `variables.tf` to your project. Specifically for credential, the service account must have at least the relevant GCS and BigQuery permissions. The easiest way is just selecting "GCS Admin" and "BigQuery Admin", but can be more fine-grained. Afterwards, just run
+```sh
+# Initialize Terraform
+terraform init
+
+# To view what you are going to create (optional due to simplicity of this project)
+terraform plan
+
+# To apply the changes
+terraform apply
+```
+
+## Step 2 - 5. Pipeline creation (`pipeline` folder)
+
+The environment is containerized with Docker. Before running `docker-compose up`, there are prerequisite:
+- Change `dev.env` to `.env`.
+- Add GCP's service account key to the folder. The folder is used as the volume to the container, so the service account key has to be there to be found.
+
+Afterwards, run `docker-compose up` to start developing. There will be 2 pipelines to create
+
+### Change config file
+
+The first step is navigating to Files to change `io_config.yaml` so that we can access 
