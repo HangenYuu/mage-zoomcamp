@@ -12,6 +12,10 @@ This is my final project for Data Engineering Zoomcamp.
 - [Architecture](#architecture)
 - [How to run](#how-to-run)
   - [Step 1. Resource creation (`terraform` folder)](#step-1-resource-creation-terraform-folder)
+  - [Step 2 - 5. Pipeline creation (`pipeline` folder)](#step-2---5-pipeline-creation-pipeline-folder)
+    - [Change config file](#change-config-file)
+    - [Pipeline 1: Load data from (surrogate) 3rd party server and load into data lake (GCS bucket)](#pipeline-1-load-data-from-surrogate-3rd-party-server-and-load-into-data-lake-gcs-bucket)
+    - [Pipeline 2: Load data from data lake into data warehouse (BigQuery)](#pipeline-2-load-data-from-data-lake-into-data-warehouse-bigquery)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -66,9 +70,193 @@ terraform apply
 The environment is containerized with Docker. Before running `docker-compose up`, there are prerequisite:
 - Change `dev.env` to `.env`.
 - Add GCP's service account key to the folder. The folder is used as the volume to the container, so the service account key has to be there to be found.
+- Download the dataset above from Kaggle and upload it to a GCS bucket. For simplicity, I used the same bucket as the one storing the parquet file later.
 
 Afterwards, run `docker-compose up` to start developing. There will be 2 pipelines to create
 
 ### Change config file
 
-The first step is navigating to Files to change `io_config.yaml` so that we can access 
+The first step is navigating to Files to change `io_config.yaml` so that we can access GCP.
+![](./media/mage_1.png)
+
+Navigate to the Google section and modify ito
+```yaml
+version: 0.1.1
+default:
+  ...
+    # Google
+  GOOGLE_SERVICE_ACC_KEY_FILEPATH: "credential.json"
+  GOOGLE_LOCATION: US # Optional
+```
+You want to relative location of the credential .json file. To find it, you go to the Terminal tab of your Mage code editor and type `ls -la`. Copy or type the printed out .json file name.
+
+### Pipeline 1: Load data from (surrogate) 3rd party server and load into data lake (GCS bucket)
+
+The DAG is simple with 3 nodes: 1 Data Loader, 1 Transformer, 1 Data Exporter.
+![](./media/mage_2.png)
+
+The full code for each
+- `load_bestseller_3rd_party`:
+```py
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.google_cloud_storage import GoogleCloudStorage
+from os import path
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test
+
+
+@data_loader
+def load_from_google_cloud_storage(*args, **kwargs):
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    bucket_name = 'dezoomcamp-416702-terra-bucket'
+    object_key = 'bestsellers.csv'
+
+    return GoogleCloudStorage.with_config(ConfigFileLoader(config_path, config_profile)).load(
+        bucket_name,
+        object_key,
+    )
+
+
+@test
+def test_output(output, *args) -> None:
+    """
+    Template code for testing the output of the block.
+    """
+    print(output.dtypes)
+    assert output is not None, 'The output is undefined'
+```
+- `bestseller_dtype_mapping`:
+```py
+import pandas as pd
+
+if 'transformer' not in globals():
+    from mage_ai.data_preparation.decorators import transformer
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test
+
+
+@transformer
+def transform(data, *args, **kwargs):
+    # Specify your transformation logic here
+    bestsellers_dtypes = {
+        "list_name": pd.CategoricalDtype(),
+        "list_name_encoded": pd.CategoricalDtype(),
+        "isbn13": "string",
+        "isbn10": "string",
+        "title": "string",
+        "author": "string",
+        "description": "string",
+        "amazon_product_url": "string"}
+    data['published_date'] = pd.to_datetime(data['published_date'])
+    return data.astype(bestsellers_dtypes)
+
+@test
+def test_output(output, *args) -> None:
+    """
+    Template code for testing the output of the block.
+    """
+    print(output.dtypes)
+    assert output is not None, 'The output is undefined'
+```
+- `bestsellers_parquet_ingestion`:
+```py
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.google_cloud_storage import GoogleCloudStorage
+from pandas import DataFrame
+from os import path
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+
+@data_exporter
+def export_data_to_google_cloud_storage(df: DataFrame, **kwargs) -> None:
+    """
+    Template for exporting data to a Google Cloud Storage bucket.
+    Specify your configuration settings in 'io_config.yaml'.
+
+    Docs: https://docs.mage.ai/design/data-loading#googlecloudstorage
+    """
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    bucket_name = 'dezoomcamp-416702-terra-bucket'
+    object_key = 'bestsellers.parquet'
+
+    GoogleCloudStorage.with_config(ConfigFileLoader(config_path, config_profile)).export(
+        df,
+        bucket_name,
+        object_key,
+    )
+```
+### Pipeline 2: Load data from data lake into data warehouse (BigQuery)
+The pipeline also has 3 components like the first one.
+![](./media/mage_3.png)
+
+The full code for each
+- `load_bestseller_gsc`:
+```py
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.google_cloud_storage import GoogleCloudStorage
+from os import path
+if 'data_loader' not in globals():
+    from mage_ai.data_preparation.decorators import data_loader
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test
+
+
+@data_loader
+def load_from_google_cloud_storage(*args, **kwargs):
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'default'
+
+    bucket_name = 'dezoomcamp-416702-terra-bucket'
+    object_key = 'bestsellers.parquet'
+
+    return GoogleCloudStorage.with_config(ConfigFileLoader(config_path, config_profile)).load(
+        bucket_name,
+        object_key,
+    )
+
+
+@test
+def test_output(output, *args) -> None:
+    """
+    Template code for testing the output of the block.
+    """
+    print(output.dtypes)
+    assert output is not None, 'The output is undefined'
+```
+- `fill_in_missing_data`:
+```py
+if 'transformer' not in globals():
+    from mage_ai.data_preparation.decorators import transformer
+if 'test' not in globals():
+    from mage_ai.data_preparation.decorators import test
+
+
+@transformer
+def transform(data, *args, **kwargs):
+    print(data.isnull().sum())
+    data.drop(columns=['isbn13', 'isbn10'], inplace=True)
+    data.fillna("unknown", inplace=True)
+    print(data.isnull().sum())
+    return data
+
+
+@test
+def test_output(output, *args) -> None:
+    """
+    Template code for testing the output of the block.
+    """
+    assert output is not None, 'The output is undefined'
+```
+- `bestsellers_parquet_ingestion`: A picture is better here.
+![](./media/mage_4.png)
